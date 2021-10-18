@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="1500px" height="700px" id='canvas'> </canvas>
+    <script type="text/javascript"> 
+        const canvas = document.getElementById('canvas');
+        const paths = []; 
+        const ctx = canvas.getContext('2d');
+        let pressed = false;
+        const drawPoint = (xyrc) => {
+            const {x, y, r} = xyrc;
+        
+            ctx.beginPath()
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        
+        const drawLine = xyrc => {
+            const {x, y, prevX, prevY, color } = xyrc;
+            //console.log(xyrc);
+            ctx.beginPath(); 
+            ctx.lineCap = 'round'
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color; 
+            ctx.moveTo(prevX, prevY); 
+            ctx.lineTo(x, y); 
+            
+            ctx.stroke(); 
+            
+            ctx.closePath()
+        }
+        
+        let prevX, prevY = 0;
+        window.onmousedown = () => {
+            pressed = true;
+        };
+        window.onmouseup = () => {
+            pressed = false; 
+            repeat(paths);
+        };
+
+
+        window.onmousemove = (e) => {
+            const { clientX, clientY } = e;
+
+            if (!pressed) {
+                prevX = clientX;
+                prevY = clientY;
+                return 
+            } 
+
+            const path = {
+                x: clientX,
+                y: clientY,
+                prevX,
+                prevY,
+            }
+            paths.push(path);
+            drawLine(path)
+            prevX = clientX;
+            prevY = clientY;
+        }
+        const delay = () => new Promise((res, rej) => setTimeout(res, 5));
+
+        const repeat = async (array) => {
+            let i = 0;
+            const buffer = [];
+            for await (path of array) {
+                const last = array[array.length - 1];
+                const first = array[0];
+                const newState = { x: path.x + last.x - first.x, y: path.y + last.y - first.y, prevX: path.prevX + last.x - first.x, prevY: path.prevY + last.y - first.y, color: 'red'};
+
+                if (i === 0) {
+                    drawLine(last);
+                    buffer.push(last)
+                } else {
+                    drawLine(newState);
+                    buffer.push(newState);
+                }
+
+                i++;
+                await delay()
+            }           
+
+            repeat(buffer)
+            paths.length = 0;
+        }
+
+    </script>
+</body>
+</html>
